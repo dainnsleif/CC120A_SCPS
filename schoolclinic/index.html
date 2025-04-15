@@ -476,6 +476,7 @@
                 'students': 'Student Management',
                 'medical-records': 'Medical Records',
                 'appointments': 'Appointments',
+                'upcoming-appointments': 'Upcoming Appointments',
                 'inventory': 'Inventory Management',
                 'reports': 'Reports',
                 'settings': 'Settings'
@@ -499,104 +500,157 @@
 
         // Function to load dashboard data
         function loadDashboardData() {
-            // In a real app, you would fetch this data from the server
-            // For demo purposes, we'll use static data
-            
-            // Recent visits data
-            const recentVisits = [
-                {
-                    student: 'John Doe',
-                    grade: 'Grade 10',
-                    date: '2023-05-15',
-                    symptoms: 'Headache, Fever',
-                    treatment: 'Paracetamol, Rest'
-                },
-                {
-                    student: 'Jane Smith',
-                    grade: 'Grade 8',
-                    date: '2023-05-15',
-                    symptoms: 'Stomach ache',
-                    treatment: 'Antacid, Observation'
-                },
-                {
-                    student: 'Michael Johnson',
-                    grade: 'Grade 11',
-                    date: '2023-05-14',
-                    symptoms: 'Sprained ankle',
-                    treatment: 'Ice pack, Bandage'
-                },
-                {
-                    student: 'Sarah Williams',
-                    grade: 'Grade 9',
-                    date: '2023-05-14',
-                    symptoms: 'Allergic reaction',
-                    treatment: 'Antihistamine'
-                }
-            ];
+            // Load all dashboard statistics
+            loadTotalStudents();
+            loadTodayVisits();
+            loadUpcomingAppointments();
+            loadLowStockItems();
+            loadRecentVisits();
+        }
 
-            // Upcoming appointments data
-            const upcomingAppointments = [
-                {
-                    student: 'Robert Brown',
-                    date: '2023-05-16',
-                    time: '10:00 AM',
-                    reason: 'Annual checkup',
-                    status: 'Scheduled'
-                },
-                {
-                    student: 'Emily Davis',
-                    date: '2023-05-16',
-                    time: '11:30 AM',
-                    reason: 'Vaccination',
-                    status: 'Scheduled'
-                },
-                {
-                    student: 'David Wilson',
-                    date: '2023-05-17',
-                    time: '09:15 AM',
-                    reason: 'Follow-up',
-                    status: 'Scheduled'
-                }
-            ];
+        // Function to load total students count
+        function loadTotalStudents() {
+            fetch('students.php')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        document.getElementById('total-students').textContent = data.data.length;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading total students:', error);
+                });
+        }
 
-            // Populate recent visits table
-            const visitsTable = document.querySelector('#recent-visits-table tbody');
-            visitsTable.innerHTML = '';
-            recentVisits.forEach(visit => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${visit.student}</td>
-                    <td>${visit.grade}</td>
-                    <td>${visit.date}</td>
-                    <td>${visit.symptoms}</td>
-                    <td>${visit.treatment}</td>
-                `;
-                visitsTable.appendChild(row);
-            });
+        // Function to load today's visits
+        function loadTodayVisits() {
+            const today = new Date().toISOString().split('T')[0];
+            fetch(`medical_records.php?date=${today}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        document.getElementById('today-visits').textContent = data.data.length;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading today\'s visits:', error);
+                });
+        }
 
-            // Populate upcoming appointments table
-            const appointmentsTable = document.querySelector('#upcoming-appointments-table tbody');
-            appointmentsTable.innerHTML = '';
-            upcomingAppointments.forEach(appointment => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${appointment.student}</td>
-                    <td>${appointment.date}</td>
-                    <td>${appointment.time}</td>
-                    <td>${appointment.reason}</td>
-                    <td><span class="badge" style="background-color: #f39c12; color: white; padding: 3px 8px; border-radius: 3px;">${appointment.status}</span></td>
-                    <td>
-                        <button class="btn btn-primary btn-sm">View</button>
-                        <button class="btn btn-success btn-sm">Complete</button>
-                    </td>
-                `;
-                appointmentsTable.appendChild(row);
-            });
+        // Function to load low stock items
+        function loadLowStockItems() {
+            fetch('inventory.php')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        const lowStockItems = data.data.filter(item => 
+                            item.quantity <= item.reorder_level
+                        );
+                        document.getElementById('low-stock').textContent = lowStockItems.length;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading low stock items:', error);
+                });
+        }
+
+        // Function to load recent visits
+        function loadRecentVisits() {
+            fetch('medical_records.php?limit=5')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        const visitsTable = document.querySelector('#recent-visits-table tbody');
+                        visitsTable.innerHTML = '';
+                        
+                        if (data.data.length === 0) {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td colspan="5" style="text-align: center;">No recent visits</td>
+                            `;
+                            visitsTable.appendChild(row);
+                        } else {
+                            data.data.forEach(visit => {
+                                const row = document.createElement('tr');
+                                row.innerHTML = `
+                                    <td>${visit.student_name}</td>
+                                    <td>${visit.grade_level}</td>
+                                    <td>${visit.visit_date}</td>
+                                    <td>${visit.symptoms}</td>
+                                    <td>${visit.treatment}</td>
+                                `;
+                                visitsTable.appendChild(row);
+                            });
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading recent visits:', error);
+                });
+        }
+
+        // Function to load upcoming appointments from the API
+        function loadUpcomingAppointments() {
+            fetch('appointments.php')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        // Filter appointments to show only upcoming ones
+                        const upcomingAppointments = data.data.filter(appointment => {
+                            const appointmentDate = new Date(appointment.appointment_date);
+                            const today = new Date();
+                            today.setHours(0, 0, 0, 0);
+                            return appointmentDate >= today && appointment.status === 'Scheduled';
+                        });
+
+                        // Update the upcoming appointments count
+                        document.getElementById('upcoming-appointments').textContent = upcomingAppointments.length;
+
+                        // Populate upcoming appointments table
+                        const appointmentsTable = document.querySelector('#upcoming-appointments-table tbody');
+                        appointmentsTable.innerHTML = '';
+                        
+                        if (upcomingAppointments.length === 0) {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td colspan="6" style="text-align: center;">No upcoming appointments</td>
+                            `;
+                            appointmentsTable.appendChild(row);
+                        } else {
+                            upcomingAppointments.forEach(appointment => {
+                                const row = document.createElement('tr');
+                                row.innerHTML = `
+                                    <td>${appointment.student_name}</td>
+                                    <td>${appointment.appointment_date}</td>
+                                    <td>${appointment.appointment_time}</td>
+                                    <td>${appointment.reason}</td>
+                                    <td><span class="badge" style="background-color: #f39c12; color: white; padding: 3px 8px; border-radius: 3px;">${appointment.status}</span></td>
+                                    <td>
+                                        <button class="btn btn-primary btn-sm">View</button>
+                                        <button class="btn btn-success btn-sm" onclick="completeAppointment('${appointment.student_name}', '${appointment.appointment_date}', '${appointment.appointment_time}')">Complete</button>
+                                    </td>
+                                `;
+                                appointmentsTable.appendChild(row);
+                            });
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading appointments:', error);
+                });
+        }
+
+        // Function to handle completing an appointment
+        function completeAppointment(student, date, time) {
+            // Redirect to the upcoming appointments view with parameters
+            window.location.href = `upcoming_appointments_view.php?student=${encodeURIComponent(student)}&date=${encodeURIComponent(date)}&time=${encodeURIComponent(time)}`;
         }
 
         // Initialize the dashboard when page loads
         document.addEventListener('DOMContentLoaded', function() {
             loadDashboardData();
+            // Set up periodic updates for all dashboard data (every 30 seconds)
+            setInterval(loadDashboardData, 30000);
         });
     </script>
 </body>
