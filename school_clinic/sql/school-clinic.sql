@@ -78,3 +78,10 @@ PREPARE alterIfNotExists FROM @preparedStatement;
 EXECUTE alterIfNotExists;
 DEALLOCATE PREPARE alterIfNotExists;
 
+-- NOTE: After running this SQL file, you should run the create_default_users.php script
+-- to create default users for testing:
+-- Admin: admin@gmail.com / admin12345
+-- Staff: staff@gmail.com / admin12345
+-- Faculty: faculty@gmail.com / faculty12345
+-- Student: student@gmail.com / student12345
+
